@@ -6,6 +6,7 @@ on:
       - main
       - develop
   pull_request:
+  workflow_dispatch:   # ← ini bikin tombol "Run workflow" muncul
 
 jobs:
 
@@ -24,19 +25,22 @@ jobs:
         run: docker compose config
 
       - name: Build containers
-        run: docker compose build
+        run: docker compose build --no-cache
 
       - name: Start containers
         run: docker compose up -d
 
       - name: Wait for services
-        run: sleep 10
+        run: sleep 15
+
+      - name: Check running containers
+        run: docker ps
 
       - name: Test project1
-        run: curl -f http://localhost/project1 || exit 1
+        run: curl -f http://localhost/project1
 
       - name: Test project2
-        run: curl -f http://localhost/project2 || exit 1
+        run: curl -f http://localhost/project2
 
       - name: Stop containers
         if: always()
@@ -48,6 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: ci
     if: github.ref == 'refs/heads/main'
+    environment: production   # ← support approval kalau mau
 
     steps:
       - name: Deploy via SSH
@@ -57,7 +62,9 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             cd /var/www/your-project
             git pull origin main
             docker compose down
             docker compose up -d --build
+            docker system prune -f
