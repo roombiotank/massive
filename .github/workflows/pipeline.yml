@@ -6,12 +6,12 @@ on:
       - main
       - develop
   pull_request:
-  workflow_dispatch:   # ← ini bikin tombol "Run workflow" muncul
+  workflow_dispatch:   # ← bikin tombol Run workflow muncul
 
 jobs:
 
   ci:
-    name: Build & Test
+    name: Build & Test Docker
     runs-on: ubuntu-latest
 
     steps:
@@ -24,17 +24,23 @@ jobs:
       - name: Validate docker-compose
         run: docker compose config
 
-      - name: Build containers
-        run: docker compose build --no-cache
+      - name: Build Docker image
+        run: docker build -t myapp:latest .
+
+      - name: Save Docker image as tar
+        run: docker save myapp:latest -o myapp_latest.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: myapp-image
+          path: myapp_latest.tar
 
       - name: Start containers
         run: docker compose up -d
 
       - name: Wait for services
         run: sleep 15
-
-      - name: Check running containers
-        run: docker ps
 
       - name: Test project1
         run: curl -f http://localhost/project1
@@ -46,15 +52,17 @@ jobs:
         if: always()
         run: docker compose down
 
-
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
     needs: ci
     if: github.ref == 'refs/heads/main'
-    environment: production   # ← support approval kalau mau
+    environment: production  # ← bisa pakai approval
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
