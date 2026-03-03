@@ -1,4 +1,4 @@
-name: Build Docker Image
+name: Build Docker Images
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: Build Docker Image
+    name: Build Docker Images
     runs-on: ubuntu-latest
 
     steps:
@@ -20,17 +20,26 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Validate docker-compose
-        run: docker compose config
+      # Build project1
+      - name: Build project1 Docker image
+        run: |
+          docker build -t project1:latest -f projects/project1/Dockerfile projects/project1
+          docker save project1:latest -o project1_latest.tar
 
-      - name: Build Docker image
-        run: docker build -t myapp:latest .
-
-      - name: Save Docker image as tar
-        run: docker save myapp:latest -o myapp_latest.tar
-
-      - name: Upload Docker image artifact
+      - name: Upload project1 Docker image
         uses: actions/upload-artifact@v4
         with:
-          name: myapp-image
-          path: myapp_latest.tar
+          name: project1-image
+          path: project1_latest.tar
+
+      # Build project2
+      - name: Build project2 Docker image
+        run: |
+          docker build -t project2:latest -f projects/project2/Dockerfile projects/project2
+          docker save project2:latest -o project2_latest.tar
+
+      - name: Upload project2 Docker image
+        uses: actions/upload-artifact@v4
+        with:
+          name: project2-image
+          path: project2_latest.tar
