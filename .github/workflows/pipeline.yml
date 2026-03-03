@@ -1,4 +1,4 @@
-name: CI/CD Docker Pipeline
+name: Build Docker Image
 
 on:
   push:
@@ -6,12 +6,11 @@ on:
       - main
       - develop
   pull_request:
-  workflow_dispatch:   # ← tombol Run workflow muncul di UI
+  workflow_dispatch:   # tombol Run workflow muncul di UI
 
 jobs:
-
-  ci:
-    name: Build & Test Docker
+  build:
+    name: Build Docker Image
     runs-on: ubuntu-latest
 
     steps:
@@ -35,52 +34,3 @@ jobs:
         with:
           name: myapp-image
           path: myapp_latest.tar
-
-      - name: Start containers
-        run: docker compose up -d
-
-      - name: Wait for services
-        run: sleep 15
-
-      - name: Test project1
-        run: curl -f http://localhost/project1
-
-      - name: Test project2
-        run: curl -f http://localhost/project2
-
-      - name: Stop containers
-        if: always()
-        run: docker compose down
-
-  deploy:
-    name: Deploy to VPS
-    runs-on: ubuntu-latest
-    needs: ci
-    if: github.ref == 'refs/heads/main'
-    environment: production   # bisa pakai approval manual
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download Docker image artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: myapp-image
-
-      - name: Load Docker image
-        run: docker load -i myapp_latest.tar
-
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            set -e
-            cd /var/www/your-project
-            git pull origin main
-            docker compose down
-            docker compose up -d --build
-            docker system prune -f
