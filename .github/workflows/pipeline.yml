@@ -6,7 +6,7 @@ on:
       - main
       - develop
   pull_request:
-  workflow_dispatch:   # ← bikin tombol Run workflow muncul
+  workflow_dispatch:   # ← tombol Run workflow muncul
 
 jobs:
 
@@ -57,11 +57,19 @@ jobs:
     runs-on: ubuntu-latest
     needs: ci
     if: github.ref == 'refs/heads/main'
-    environment: production  # ← bisa pakai approval
+    environment: production   # bisa pakai approval
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: myapp-image
+
+      - name: Load Docker image
+        run: docker load -i myapp_latest.tar
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
